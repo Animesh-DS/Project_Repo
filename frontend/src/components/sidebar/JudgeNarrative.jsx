@@ -1,28 +1,89 @@
 export default function JudgeNarrative({
-  currentStage,
+  stages,
 }) {
 
-  const messages = {
-    capture:
-      "Raw biometric loaded into RAM. Never written to disk.",
+  /* ==========================================
+     Human Explanation Layer
 
-    preprocess:
-      "Biometric normalized before cryptographic processing.",
+     This component explains
+     cryptographic operations
+     to judges.
 
-    error_correct:
-      "Fuzzy extractor corrects noise and derives stable key.",
+     Driven entirely by backend
+     stage events.
 
-    hash:
-      "SHA-256 commitment generated. Original key discarded.",
+     P4 sends:
 
-    wipe:
-      "All intermediate memory overwritten with zeros.",
-  };
+     capture
+     preprocess
+     error_correct
+     hash
+     wipe
+     verify
+  ========================================== */
+
+  let message =
+    "Waiting for authentication pipeline...";
+
+  if (
+    stages?.capture ===
+    "done"
+  ) {
+    message =
+      "Raw biometric loaded into RAM — never written to disk.";
+  }
+
+  if (
+    stages?.preprocess ===
+    "done"
+  ) {
+    message =
+      "Biometric data normalised before cryptographic processing.";
+  }
+
+  if (
+    stages?.error_correct ===
+    "done"
+  ) {
+    message =
+      "Fuzzy extractor corrects noise and derives a stable cryptographic key.";
+  }
+
+  if (
+    stages?.hash ===
+    "done"
+  ) {
+    message =
+      "SHA-256 commitment generated. Original biometric key discarded.";
+  }
+
+  if (
+    stages?.wipe ===
+    "done"
+  ) {
+    message =
+      "All intermediate memory overwritten with zeros. Biometric data no longer exists in RAM.";
+  }
+
+  if (
+    stages?.verify ===
+    "done"
+  ) {
+    message =
+      "Commitment verified across decentralised nodes. No raw biometric data leaves the device.";
+  }
 
   return (
-    <div className="narrative-text">
-      {messages[currentStage] ||
-        "Waiting for pipeline..."}
+    <div className="narrative-container">
+
+      <div className="narrative-badge">
+        LIVE EXPLANATION
+      </div>
+
+      <div className="narrative-text">
+        {message}
+      </div>
+
     </div>
   );
 }

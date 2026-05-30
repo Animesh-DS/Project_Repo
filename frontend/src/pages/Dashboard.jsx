@@ -1,175 +1,256 @@
-import { useState } from "react";
+import { useContext } from "react";
 import { motion } from "framer-motion";
 
 import StageTracker from "../components/pipeline/StageTracker";
 import NodeVotes from "../components/nodes/NodeVotes";
 import JudgeNarrative from "../components/sidebar/JudgeNarrative";
 
+import {
+  PipelineContext,
+} from "../context/PipelineContext";
+
+import useWebSocket from "../hooks/useWebSocket";
+
+import {
+  enrol,
+  authenticate,
+} from "../services/api";
+
 export default function Dashboard() {
 
-  const [darkMode, setDarkMode] = useState(true);
+  /* ==========================================
+     P3 FRONTEND ENTRY POINT
 
-  const [verified, setVerified] =
-    useState(false);
+     This component DOES NOT control
+     the authentication flow.
 
-  const [currentStage,
-    setCurrentStage] =
-    useState("");
+     It ONLY visualises events coming
+     from the backend.
 
-  const [stageStates,
-    setStageStates] =
-    useState({
-      capture: "",
-      preprocess: "",
-      error_correct: "",
-      hash: "",
-      wipe: "",
-    });
+     Backend Owner:
+     P4 (Animesh)
 
-  const runDemo = async () => {
+     Event Source:
+     ws://localhost:8000/ws/pipeline
+  ========================================== */
 
-    setVerified(false);
+  useWebSocket();
 
-    const stages = [
-      "capture",
-      "preprocess",
-      "error_correct",
-      "hash",
-      "wipe",
-    ];
+  const {
+    state,
+  } = useContext(
+    PipelineContext
+  );
 
-    const newState = {
-      capture: "",
-      preprocess: "",
-      error_correct: "",
-      hash: "",
-      wipe: "",
-    };
+  const {
+    stages,
+    verifyResult,
+    commitment_hex,
+    verified_zero,
+  } = state;
 
-    setStageStates(newState);
+  /* ==========================================
+     Disable buttons while pipeline running
+  ========================================== */
 
-    for (const stage of stages) {
+  const pipelineRunning =
+    Object.values(stages).includes(
+      "start"
+    );
 
-      setCurrentStage(stage);
+  return (
+    <div className="dashboard">
 
-      setStageStates(prev => ({
-        ...prev,
-        [stage]: "running",
-      }));
+      {/* ======================================
+         Animated Aurora Background
+      ====================================== */}
+      <div className="background-glow" />
 
-      await new Promise(r =>
-        setTimeout(r, 1000)
-      );
+      {/* ======================================
+         HERO SECTION
+      ====================================== */}
+      <header className="hero">
 
-      setStageStates(prev => ({
-        ...prev,
-        [stage]: "done",
-      }));
-
-      await new Promise(r =>
-        setTimeout(r, 600)
-      );
-    }
-
-    setVerified(true);
-  };
-
- return (
-  <div
-    className={`dashboard ${
-      darkMode ? "theme-dark" : "theme-light"
-    }`}
-  >
-    <div className="background-glow" />
-
-    <div className="theme-toggle-container">
-      <button
-        className="theme-toggle"
-        onClick={() => setDarkMode(!darkMode)}
-      >
-        {darkMode ? "☀ Light" : "🌙 Dark"}
-      </button>
-    </div>
-
-    <header className="hero">
-
-      <motion.h1
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-      >
-        ZERO KNOWLEDGE
-        <span> BIOMETRICS</span>
-      </motion.h1>
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        Privacy Preserving Identity Verification
-      </motion.p>
-
-      <div className="action-buttons">
-
-        <button
-          className="primary-btn"
-          onClick={runDemo}
+        <motion.h1
+          initial={{
+            opacity: 0,
+            y: -30,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.8,
+          }}
         >
-          ENROL
-        </button>
+          ZERO KNOWLEDGE
+          <span> BIOMETRICS</span>
+        </motion.h1>
 
-        <button
-          className="secondary-btn"
-          onClick={runDemo}
+        <motion.p
+          initial={{
+            opacity: 0,
+          }}
+          animate={{
+            opacity: 1,
+          }}
+          transition={{
+            delay: 0.3,
+          }}
         >
-          AUTHENTICATE
-        </button>
+          Privacy Preserving Identity Verification
+        </motion.p>
 
-      </div>
+        {/* ==============================
+           Backend Trigger Buttons
 
-    </header>
+           P4 should expose:
 
-    <section className="memory-panel glass">
+           POST /enrol
 
-      <div className="section-title">
-        MEMORY TRACE VISUALISER
-      </div>
+           POST /authenticate
+        ============================== */}
+        <div className="action-buttons">
 
-      <StageTracker
-        stageStates={stageStates}
-      />
+          <button
+            className="primary-btn"
+            disabled={pipelineRunning}
+            onClick={enrol}
+          >
+            ENROL
+          </button>
 
-    </section>
+          <button
+            className="secondary-btn"
+            disabled={pipelineRunning}
+            onClick={authenticate}
+          >
+            AUTHENTICATE
+          </button>
 
-    <div className="bottom-layout">
-
-      <section className="glass node-panel">
-
-        <div className="section-title">
-          DECENTRALISED VERIFICATION
         </div>
 
-        <NodeVotes
-          verified={verified}
+      </header>
+
+      {/* ======================================
+         MEMORY TRACE PANEL
+      ====================================== */}
+      <section className="memory-panel glass">
+
+        <div className="section-title">
+          MEMORY TRACE VISUALISER
+        </div>
+
+        {/* ==================================
+           Stages are driven entirely by
+           backend WebSocket events.
+
+           Example:
+
+           {
+             stage:"capture",
+             status:"start"
+           }
+
+           {
+             stage:"capture",
+             status:"done"
+           }
+        ================================== */}
+
+        <StageTracker
+          stageStates={stages}
         />
 
       </section>
 
-      <section className="glass narrative-panel">
+      {/* ======================================
+         HASH COMMITMENT DISPLAY
 
-        <div className="section-title">
-          JUDGE NARRATIVE
-        </div>
+         Only show first 8 chars.
 
-        <JudgeNarrative
-          currentStage={currentStage}
-        />
+         Never expose full hash.
+      ====================================== */}
 
-      </section>
+      {commitment_hex && (
+
+        <section
+          className="glass commitment-panel"
+        >
+
+          <div className="section-title">
+            COMMITMENT HASH
+          </div>
+
+          <div className="commitment-value">
+            {commitment_hex}...
+          </div>
+
+        </section>
+
+      )}
+
+      {/* ======================================
+         MEMORY WIPE STATUS
+      ====================================== */}
+
+      {verified_zero && (
+
+        <section
+          className="glass wipe-status-panel"
+        >
+
+          <div className="wipe-success">
+
+            ✓ MEMORY VERIFIED AS ZEROED
+
+          </div>
+
+        </section>
+
+      )}
+
+      {/* ======================================
+         LOWER PANELS
+      ====================================== */}
+
+      <div className="bottom-layout">
+
+        {/* ==============================
+           NODE CONSENSUS PANEL
+        ============================== */}
+        <section className="glass node-panel">
+
+          <div className="section-title">
+            DECENTRALISED VERIFICATION
+          </div>
+
+          <NodeVotes
+            verifyResult={
+              verifyResult
+            }
+          />
+
+        </section>
+
+        {/* ==============================
+           JUDGE EXPLANATION PANEL
+        ============================== */}
+        <section className="glass narrative-panel">
+
+          <div className="section-title">
+            JUDGE NARRATIVE
+          </div>
+
+          <JudgeNarrative
+            stages={stages}
+          />
+
+        </section>
+
+      </div>
 
     </div>
-
-  </div>
-);
+  );
 }

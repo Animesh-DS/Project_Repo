@@ -2,34 +2,103 @@ import { motion } from "framer-motion";
 import MemoryCell from "./MemoryCell";
 
 export default function StageTracker({
-  stageStates,
+  stageStates = {},
 }) {
+
+  /* ==========================================
+     P3 FRONTEND
+
+     Receives stage status from backend.
+
+     Expected values:
+
+     "start"
+     "done"
+     "error"
+
+     Source:
+     PipelineContext -> WebSocket
+
+     P4 MUST emit:
+
+     {
+       stage:"capture",
+       status:"start"
+     }
+
+  ========================================== */
+
+  const stages = [
+    {
+      title: "CAPTURE",
+      key: "capture",
+    },
+    {
+      title: "PREPROCESS",
+      key: "preprocess",
+    },
+    {
+      title: "ERROR-CORRECT",
+      key: "error_correct",
+    },
+    {
+      title: "HASH",
+      key: "hash",
+    },
+    {
+      title: "WIPE",
+      key: "wipe",
+    },
+  ];
+
   return (
     <div className="pipeline-grid">
-      <MemoryCell
-        title="CAPTURE"
-        state={stageStates.capture}
-      />
 
-      <MemoryCell
-        title="PREPROCESS"
-        state={stageStates.preprocess}
-      />
+      {stages.map(
+        (stage, index) => (
+          <div
+            key={stage.key}
+            className="pipeline-stage"
+          >
 
-      <MemoryCell
-        title="ERROR-CORRECT"
-        state={stageStates.error_correct}
-      />
+            <MemoryCell
+              title={stage.title}
+              state={
+                stageStates[
+                  stage.key
+                ] || ""
+              }
+            />
 
-      <MemoryCell
-        title="HASH"
-        state={stageStates.hash}
-      />
+            {/* =========================
+               Animated Connector
+            ========================= */}
 
-      <MemoryCell
-        title="WIPE"
-        state={stageStates.wipe}
-      />
+            {index <
+              stages.length - 1 && (
+              <motion.div
+                className="pipeline-arrow"
+                animate={{
+                  opacity: [
+                    0.3,
+                    1,
+                    0.3,
+                  ],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat:
+                    Infinity,
+                }}
+              >
+                →
+              </motion.div>
+            )}
+
+          </div>
+        )
+      )}
+
     </div>
   );
 }
