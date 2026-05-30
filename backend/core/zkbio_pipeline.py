@@ -4,7 +4,7 @@ import dlib
 import numpy as np
 import threading
 from typing import TypedDict, Literal
-from zkbio_crypto import generate, reproduce, commit, zero_bytes
+from core.zkbio_crypto import generate, reproduce, commit, zero_bytes
 
 EnrolResult = TypedDict('EnrolResult', {
     'commitment_hex': str,

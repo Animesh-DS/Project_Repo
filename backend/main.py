@@ -91,5 +91,15 @@ async def ws_pipeline(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-app.include_router(enrol.router)
-app.include_router(authenticate.router)
+app.include_ro@app.websocket("/ws/pipeline")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("Frontend successfully connected to the WebSocket!")
+    try:
+        while True:
+            # This keeps the connection open and listens for anything the frontend sends
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        print("Frontend disconnected.")
+        app.uter(authenticate.router)
+
