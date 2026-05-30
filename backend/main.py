@@ -1,5 +1,6 @@
-# backend/main.py
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from services.websocket_manager import manager # <--- NEW IMPORT
 
 app = FastAPI(
     title="Zero-Knowledge Cancelable Biometrics API",
@@ -22,3 +23,18 @@ async def audit_endpoint():
         "node_count": 3,
         "records_in_memory": 0
     }
+
+# 3. Live WebSocket Feed
+
+@app.websocket("/ws/pipeline")
+async def ws_pipeline(websocket: WebSocket):
+    """
+    The frontend (P3) connects here to listen for live biometric processing events.
+    """
+    await manager.connect(websocket)
+    try:
+        # Keep the connection alive indefinitely
+        while True:
+            await asyncio.sleep(0.05) 
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
