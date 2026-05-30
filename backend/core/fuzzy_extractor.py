@@ -22,11 +22,10 @@ def reproduce_sketch(noisy_bio: bytes, helper_data: bytes):
     
     noisy_array = bytearray(noisy_bio)
     
-    # Try to decode it
     errors = bch.decode(noisy_array, syndrome)
     
     if errors < 0:
-        raise Exception("Failed to correct errors")
+        raise ValueError("reproduce_failed")
         
     bch.correct(noisy_array, syndrome)
     
