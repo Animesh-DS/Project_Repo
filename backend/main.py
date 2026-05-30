@@ -2,6 +2,7 @@ import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from services.websocket_manager import manager 
 from api.routes import enrol, authenticate
+from core.zkbio_pipeline import event_queue
 
 app = FastAPI(
     title="Zero-Knowledge Cancelable Biometrics API",
@@ -34,7 +35,6 @@ async def ws_pipeline(websocket: WebSocket):
     """
     await manager.connect(websocket)
     try:
-        # Keep the connection alive indefinitely
         while True:
             await asyncio.sleep(0.05) 
     except WebSocketDisconnect:
