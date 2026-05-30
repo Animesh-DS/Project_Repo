@@ -10,3 +10,14 @@ EnrolResult = TypedDict('EnrolResult', {
     'helper_data': bytes,
     'mode': Literal['enrol']
 })
+
+AuthResult = TypedDict('AuthResult', {
+    'commitment_hex': str,
+    'mode': Literal['auth']
+})
+
+PipelineEvent = TypedDict('PipelineEvent', {
+    'stage': str,
+    'status': str,
+    'data': dict
+})
