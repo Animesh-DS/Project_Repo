@@ -40,3 +40,36 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
         shape = sp(frame, dets[0])
         face_descriptor = facerec.compute_face_descriptor(frame, shape)
         arr = np.array(face_descriptor, dtype=float)
+        
+        elif mode == "fingerprint":
+        img = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+        
+       
+        if img is None:
+            raise ValueError("fingerprint_read_failed")
+            
+        arr = np.zeros(128, dtype=float)
+        for i in range(8):
+            k = cv2.getGaborKernel((31, 31), 4.0, i * np.pi / 8, 10.0, 0.5, 0, ktype=cv2.CV_32F)
+            filtered = cv2.filter2D(img, cv2.CV_32F, k)
+           
+            pooled = cv2.resize(filtered, (4, 4))
+            arr[i*16:(i+1)*16] = pooled.flatten()
+            
+    else:
+       
+        raise ValueError("invalid_mode")
+    
+    arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=-1.0)
+    arr = np.clip(arr, -1.0, 1.0)
+    
+    quantised = (arr * 32767).astype('>i2')
+    bio_bits_buf = bytearray(quantised.tobytes())
+    
+    if len(bio_bits_buf) != 256:
+        raise ValueError("bad_capture_length")
+        
+    event_queue.put({"stage": "capture", "status": "done", "data": {"bytes_captured": 256}})
+    event_queue.put({"stage": "preprocess", "status": "done", "data": {}})
+    
+    return bio_bits_buf
