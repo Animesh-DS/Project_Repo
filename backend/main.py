@@ -54,7 +54,7 @@ async def ws_pipeline(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            await asyncio.sleep(0.05) 
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
