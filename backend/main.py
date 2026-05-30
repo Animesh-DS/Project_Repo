@@ -1,13 +1,26 @@
 import asyncio
 import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from services.websocket_manager import manager 
 from api.routes import enrol, authenticate
 from core.zkbio_pipeline import event_queue
+from services.node_service import get_total_records_in_memory
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handles startup and shutdown events cleanly."""
+    loop = asyncio.get_running_loop()
+    thread = threading.Thread(target=drain_pipeline_events, args=(loop,), daemon=True)
+    thread.start()
+    
+    yield 
+    
 
 app = FastAPI(
     title="Zero-Knowledge Cancelable Biometrics API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan 
 )
 
 def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
@@ -18,7 +31,14 @@ def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
     while True:
         event = event_queue.get() 
         
-        asyncio.run_coroutine_threadsafe(manager.broadcast(event), loop)
+        try:
+            future = asyncio.run_coroutine_threadsafe(manager.broadcast(event), loop)
+            future.result() 
+        except Exception as e:
+            print(f"WS Broadcast Error: {e}")
+        finally:
+            if hasattr(event_queue, 'task_done'):
+                event_queue.task_done()
 
 @app.on_event("startup")
 async def startup_event():
@@ -41,7 +61,7 @@ async def audit_endpoint():
     return {
         "persistent_storage": False,
         "node_count": 3,
-        "records_in_memory": 0
+        "records_in_memory": get_total_records_in_memory()
     }
 
 # 3. Live WebSocket Feed
