@@ -7,6 +7,8 @@ import JudgeNarrative from "../components/sidebar/JudgeNarrative";
 
 export default function Dashboard() {
 
+  const [darkMode, setDarkMode] = useState(true);
+
   const [verified, setVerified] =
     useState(false);
 
@@ -72,84 +74,102 @@ export default function Dashboard() {
     setVerified(true);
   };
 
-  return (
-    <div className="dashboard">
+ return (
+  <div
+    className={`dashboard ${
+      darkMode ? "theme-dark" : "theme-light"
+    }`}
+  >
+    <div className="background-glow" />
 
-      <div className="background-glow" />
+    <div className="theme-toggle-container">
+      <button
+        className="theme-toggle"
+        onClick={() => setDarkMode(!darkMode)}
+      >
+        {darkMode ? "☀ Light" : "🌙 Dark"}
+      </button>
+    </div>
 
-      <header className="hero">
+    <header className="hero">
 
-        <h1>
-          ZERO KNOWLEDGE
-          <span> BIOMETRICS</span>
-        </h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        ZERO KNOWLEDGE
+        <span> BIOMETRICS</span>
+      </motion.h1>
 
-        <p>
-          Privacy Preserving Identity Verification
-        </p>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        Privacy Preserving Identity Verification
+      </motion.p>
 
-        <div className="action-buttons">
+      <div className="action-buttons">
 
-          <button
-            className="primary-btn"
-            onClick={runDemo}
-          >
-            ENROL
-          </button>
+        <button
+          className="primary-btn"
+          onClick={runDemo}
+        >
+          ENROL
+        </button>
 
-          <button
-            className="secondary-btn"
-            onClick={runDemo}
-          >
-            AUTHENTICATE
-          </button>
+        <button
+          className="secondary-btn"
+          onClick={runDemo}
+        >
+          AUTHENTICATE
+        </button>
 
-        </div>
+      </div>
 
-      </header>
+    </header>
 
-      <section className="memory-panel glass">
+    <section className="memory-panel glass">
+
+      <div className="section-title">
+        MEMORY TRACE VISUALISER
+      </div>
+
+      <StageTracker
+        stageStates={stageStates}
+      />
+
+    </section>
+
+    <div className="bottom-layout">
+
+      <section className="glass node-panel">
 
         <div className="section-title">
-          MEMORY TRACE VISUALISER
+          DECENTRALISED VERIFICATION
         </div>
 
-        <StageTracker
-          stageStates={stageStates}
+        <NodeVotes
+          verified={verified}
         />
 
       </section>
 
-      <div className="bottom-layout">
+      <section className="glass narrative-panel">
 
-        <section className="glass node-panel">
+        <div className="section-title">
+          JUDGE NARRATIVE
+        </div>
 
-          <div className="section-title">
-            DECENTRALISED VERIFICATION
-          </div>
+        <JudgeNarrative
+          currentStage={currentStage}
+        />
 
-          <NodeVotes
-            verified={verified}
-          />
-
-        </section>
-
-        <section className="glass narrative-panel">
-
-          <div className="section-title">
-            JUDGE NARRATIVE
-          </div>
-
-          <JudgeNarrative
-            currentStage={
-              currentStage
-            }
-          />
-
-        </section>
-
-      </div>
+      </section>
 
     </div>
-  );
+
+  </div>
+);
 }
