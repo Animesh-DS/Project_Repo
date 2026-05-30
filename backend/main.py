@@ -1,6 +1,7 @@
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from services.websocket_manager import manager # <--- NEW IMPORT
+from services.websocket_manager import manager 
+from api.routes import enrol, authenticate
 
 app = FastAPI(
     title="Zero-Knowledge Cancelable Biometrics API",
@@ -38,3 +39,7 @@ async def ws_pipeline(websocket: WebSocket):
             await asyncio.sleep(0.05) 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+
+app.include_router(enrol.router)
+app.include_router(authenticate.router)
