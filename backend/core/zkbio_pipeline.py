@@ -22,4 +22,21 @@ PipelineEvent = TypedDict('PipelineEvent', {
     'data': dict
 })
 
-event_queue: queue.Queue = queue.Queue()
+event_queue: queue.Queue[PipelineEvent] = queue.Queue(maxsize=100)
+
+def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
+    if mode == "face":
+        cap = cv2.VideoCapture(0)
+        ret, frame = cap.read()
+        cap.release()
+        
+        if not ret:
+            raise ValueError("capture_failed")
+            
+        dets = detector(frame, 1)
+        if not dets:
+            raise ValueError("no_face")
+            
+        shape = sp(frame, dets[0])
+        face_descriptor = facerec.compute_face_descriptor(frame, shape)
+        arr = np.array(face_descriptor, dtype=float)
