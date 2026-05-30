@@ -2,6 +2,7 @@ import queue
 import cv2
 import dlib
 import numpy as np
+import threading
 from typing import TypedDict, Literal
 from zkbio_crypto import generate, reproduce, commit, zero_bytes
 
@@ -24,20 +25,37 @@ PipelineEvent = TypedDict('PipelineEvent', {
 
 event_queue: queue.Queue[PipelineEvent] = queue.Queue(maxsize=100)
 
+
+
+detector = dlib.get_frontal_face_detector()
+facerec = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
+sp = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+
+
+camera_lock = threading.Lock()
+
+def _safe_push(event: PipelineEvent) -> None:
+    """Helper to instantly push events without freezing FastAPI if the queue is full."""
+    try:
+        event_queue.put_nowait(event)
+    except queue.Full:
+        pass
+
 def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     if mode == "face":
-        cap = cv2.VideoCapture(0)
-        
-        for _ in range(5):
-            cap.read()
-            
-        ret, frame = cap.read()
-        cap.release()
+        # Block concurrent threads from accessing the camera simultaneously
+        with camera_lock:
+            cap = cv2.VideoCapture(0)
+            try:
+                for _ in range(5):
+                    cap.read()
+                ret, frame = cap.read()
+            finally:
+                cap.release()
         
         if not ret:
             raise ValueError("capture_failed")
             
-        
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
         dets = detector(rgb_frame, 1)
@@ -68,10 +86,8 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     else:
         raise ValueError("invalid_mode")
     
-  
     arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=-1.0)
     
-   
     norm = np.linalg.norm(arr)
     if norm > 0:
         arr = arr / norm
@@ -84,20 +100,11 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     if len(bio_bits_buf) != 256:
         raise ValueError("bad_capture_length")
         
-  
-    event_queue.put({"stage": "capture", "status": "done", "data": {"bytes_captured": 256}})
-    event_queue.put({"stage": "preprocess", "status": "done", "data": {}})
+    _safe_push({"stage": "capture", "status": "done", "data": {"bytes_captured": 256}})
+    _safe_push({"stage": "preprocess", "status": "done", "data": {}})
     
     return bio_bits_buf
 
-import queue
-
-def _safe_push(event: PipelineEvent) -> None:
-    """Helper to instantly push events without freezing FastAPI if the queue is full."""
-    try:
-        event_queue.put_nowait(event)
-    except queue.Full:
-        pass
 
 def enrol(mode: str = "face") -> EnrolResult:
     commitment_hex = ""
@@ -119,15 +126,13 @@ def enrol(mode: str = "face") -> EnrolResult:
         commitment_hex = commit(stable_key)
         _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": commitment_hex[:8] + "..."}})
         
-    except Exception as e:
+    except Exception:
         _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
         
     finally:
-       
         _safe_push({"stage": "wipe", "status": "start", "data": {}})
         is_zero = True
         
-       
         try:
             if bio_bits_buf is not None:
                 zero_bytes(bio_bits_buf)
@@ -135,7 +140,6 @@ def enrol(mode: str = "face") -> EnrolResult:
         except Exception:
             is_zero = False  
             
-       
         try:
             if stable_key is not None:
                 del stable_key
@@ -146,15 +150,14 @@ def enrol(mode: str = "face") -> EnrolResult:
         
     return {"commitment_hex": commitment_hex, "helper_data": helper_data, "mode": "enrol"}
 
+
 def authenticate(helper_data: bytes, commitment_hex: str, mode: str = "face") -> AuthResult:
-    
     candidate_hex = ""
     bio_bits_buf = None
     stable_key = None
     current_stage = "capture"
     
     try:
-       
         bio_bits_buf = capture_biometric(mode)
         
         current_stage = "error_correct"
@@ -167,12 +170,10 @@ def authenticate(helper_data: bytes, commitment_hex: str, mode: str = "face") ->
         candidate_hex = commit(stable_key)
         _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": candidate_hex[:8] + "..."}})
         
-    except Exception as e:
-        
+    except Exception:
         _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
         
     finally:
-        # SECURE MEMORY WIPE
         _safe_push({"stage": "wipe", "status": "start", "data": {}})
         is_zero = True
         
@@ -183,7 +184,6 @@ def authenticate(helper_data: bytes, commitment_hex: str, mode: str = "face") ->
         except Exception:
             is_zero = False
             
-        
         try:
             if stable_key is not None:
                 del stable_key
