@@ -6,6 +6,10 @@ from services.websocket_manager import manager
 from api.routes import enrol, authenticate
 from core.zkbio_pipeline import event_queue
 from services.node_service import get_total_records_in_memory
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +25,14 @@ app = FastAPI(
     title="Zero-Knowledge Cancelable Biometrics API",
     version="1.0.0",
     lifespan=lifespan 
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows Ayushman's UI to connect from any port during the demo
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
