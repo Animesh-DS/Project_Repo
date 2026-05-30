@@ -29,5 +29,8 @@ def query_nodes(candidate_hex: str) -> list[bool]:
     return [node.query(candidate_hex) for node in nodes]
 
 def get_total_records_in_memory() -> int:
-    """Helper for the /audit endpoint to prove we aren't using a real database."""
-    return nodes[0].count_records()
+    """
+    Helper for the /audit endpoint. 
+    Counts the actual total records currently sharded across the entire network.
+    """
+    return sum(node.count_records() for node in nodes)
