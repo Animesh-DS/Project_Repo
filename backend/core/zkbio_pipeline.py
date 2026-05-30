@@ -90,3 +90,23 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     
     return bio_bits_buf
 
+def enrol(mode: str = "face") -> EnrolResult:
+    bio_bits_buf = capture_biometric(mode)
+    
+    event_queue.put({"stage": "error_correct", "status": "start", "data": {}})
+    stable_key, helper_data = generate(bytes(bio_bits_buf))
+    event_queue.put({"stage": "error_correct", "status": "done", "data": {}})
+    
+    event_queue.put({"stage": "hash", "status": "start", "data": {}})
+    commitment_hex = commit(stable_key)
+    event_queue.put({"stage": "hash", "status": "done", "data": {"commitment_hex": commitment_hex[:8] + "..."}})
+    
+    event_queue.put({"stage": "wipe", "status": "start", "data": {}})
+    zero_bytes(bio_bits_buf)
+    stable_key_buf = bytearray(stable_key)
+    zero_bytes(stable_key_buf)
+    
+    is_zero = all(b == 0 for b in bio_bits_buf)
+    event_queue.put({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
+    
+    return {"commitment_hex": commitment_hex, "helper_data": helper_data, "mode": "enrol"}
