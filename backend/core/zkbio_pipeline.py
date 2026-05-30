@@ -21,3 +21,5 @@ PipelineEvent = TypedDict('PipelineEvent', {
     'status': str,
     'data': dict
 })
+
+event_queue: queue.Queue = queue.Queue()
