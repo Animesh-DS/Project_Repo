@@ -14,7 +14,7 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, event: dict):
-        for connection in self.active_connections:
+        for connection in list(self.active_connections):
             await connection.send_json(event)
 
 # Create a single global instance of this manager
