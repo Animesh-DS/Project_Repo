@@ -90,23 +90,58 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     
     return bio_bits_buf
 
+import queue
+
+def _safe_push(event: PipelineEvent) -> None:
+    """Helper to instantly push events without freezing FastAPI if the queue is full."""
+    try:
+        event_queue.put_nowait(event)
+    except queue.Full:
+        pass
+
 def enrol(mode: str = "face") -> EnrolResult:
-    bio_bits_buf = capture_biometric(mode)
+    commitment_hex = ""
+    helper_data = b""
+    bio_bits_buf = None
+    stable_key = None
+    current_stage = "capture"  
     
-    event_queue.put({"stage": "error_correct", "status": "start", "data": {}})
-    stable_key, helper_data = generate(bytes(bio_bits_buf))
-    event_queue.put({"stage": "error_correct", "status": "done", "data": {}})
-    
-    event_queue.put({"stage": "hash", "status": "start", "data": {}})
-    commitment_hex = commit(stable_key)
-    event_queue.put({"stage": "hash", "status": "done", "data": {"commitment_hex": commitment_hex[:8] + "..."}})
-    
-    event_queue.put({"stage": "wipe", "status": "start", "data": {}})
-    zero_bytes(bio_bits_buf)
-    stable_key_buf = bytearray(stable_key)
-    zero_bytes(stable_key_buf)
-    
-    is_zero = all(b == 0 for b in bio_bits_buf)
-    event_queue.put({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
-    
+    try:
+        bio_bits_buf = capture_biometric(mode)
+        
+        current_stage = "error_correct"
+        _safe_push({"stage": current_stage, "status": "start", "data": {}})
+        stable_key, helper_data = generate(bytes(bio_bits_buf))
+        _safe_push({"stage": current_stage, "status": "done", "data": {}})
+        
+        current_stage = "hash"
+        _safe_push({"stage": current_stage, "status": "start", "data": {}})
+        commitment_hex = commit(stable_key)
+        _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": commitment_hex[:8] + "..."}})
+        
+    except Exception as e:
+        _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
+        
+    finally:
+       
+        _safe_push({"stage": "wipe", "status": "start", "data": {}})
+        is_zero = True
+        
+       
+        try:
+            if bio_bits_buf is not None:
+                zero_bytes(bio_bits_buf)
+                is_zero = all(b == 0 for b in bio_bits_buf)
+        except Exception:
+            is_zero = False  
+            
+       
+        try:
+            if stable_key is not None:
+                del stable_key
+        except Exception:
+            pass
+            
+        _safe_push({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
+        
     return {"commitment_hex": commitment_hex, "helper_data": helper_data, "mode": "enrol"}
