@@ -1,34 +1,35 @@
+import { motion } from "framer-motion";
 import MemoryCell from "./MemoryCell";
 
-export default function StageTracker() {
+export default function StageTracker({
+  stageStates,
+}) {
   return (
     <div className="pipeline-grid">
-
       <MemoryCell
         title="CAPTURE"
-        state="done"
+        state={stageStates.capture}
       />
 
       <MemoryCell
         title="PREPROCESS"
-        state="done"
+        state={stageStates.preprocess}
       />
 
       <MemoryCell
         title="ERROR-CORRECT"
-        state="done"
+        state={stageStates.error_correct}
       />
 
       <MemoryCell
         title="HASH"
-        state="done"
+        state={stageStates.hash}
       />
 
       <MemoryCell
         title="WIPE"
-        state="done"
+        state={stageStates.wipe}
       />
-
     </div>
   );
 }
