@@ -2,38 +2,12 @@ import asyncio
 import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+
 from services.websocket_manager import manager 
 from api.routes import enrol, authenticate
 from core.zkbio_pipeline import event_queue
 from services.node_service import get_total_records_in_memory
-from fastapi.middleware.cors import CORSMiddleware
-
-
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Handles startup and shutdown events cleanly."""
-    loop = asyncio.get_running_loop()
-    thread = threading.Thread(target=drain_pipeline_events, args=(loop,), daemon=True)
-    thread.start()
-    
-    yield 
-    
-
-app = FastAPI(
-    title="Zero-Knowledge Cancelable Biometrics API",
-    version="1.0.0",
-    lifespan=lifespan 
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Allows Ayushman's UI to connect from any port during the demo
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
     """
@@ -42,7 +16,6 @@ def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
     """
     while True:
         event = event_queue.get() 
-        
         try:
             future = asyncio.run_coroutine_threadsafe(manager.broadcast(event), loop)
             future.result() 
@@ -52,12 +25,27 @@ def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
             if hasattr(event_queue, 'task_done'):
                 event_queue.task_done()
 
-@app.on_event("startup")
-async def startup_event():
-    """Starts the background drainer when the server boots."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handles startup and shutdown events cleanly."""
     loop = asyncio.get_running_loop()
     thread = threading.Thread(target=drain_pipeline_events, args=(loop,), daemon=True)
     thread.start()
+    yield 
+
+app = FastAPI(
+    title="Zero-Knowledge Cancelable Biometrics API",
+    version="1.0.0",
+    lifespan=lifespan 
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows the UI to connect from any port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 async def health_check():
@@ -76,30 +64,21 @@ async def audit_endpoint():
         "records_in_memory": get_total_records_in_memory()
     }
 
-# 3. Live WebSocket Feed
-
+# --- THE SINGLE, PERFECT WEBSOCKET ROUTE ---
 @app.websocket("/ws/pipeline")
 async def ws_pipeline(websocket: WebSocket):
     """
-    The frontend (P3) connects here to listen for live biometric processing events.
+    The frontend connects here to listen for live biometric processing events.
     """
     await manager.connect(websocket)
+    print("✅ Frontend successfully connected to the WebSocket Pipeline!")
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+        print("⚠️ Frontend disconnected.")
 
-
-app.include_ro@app.websocket("/ws/pipeline")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    print("Frontend successfully connected to the WebSocket!")
-    try:
-        while True:
-            # This keeps the connection open and listens for anything the frontend sends
-            data = await websocket.receive_text()
-    except WebSocketDisconnect:
-        print("Frontend disconnected.")
-        app.uter(authenticate.router)
-
+# --- ROUTERS INCLUDED EXACTLY ONCE ---
+app.include_router(enrol.router)
+app.include_router(authenticate.router)
