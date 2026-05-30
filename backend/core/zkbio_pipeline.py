@@ -145,3 +145,51 @@ def enrol(mode: str = "face") -> EnrolResult:
         _safe_push({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
         
     return {"commitment_hex": commitment_hex, "helper_data": helper_data, "mode": "enrol"}
+
+def authenticate(helper_data: bytes, commitment_hex: str, mode: str = "face") -> AuthResult:
+    
+    candidate_hex = ""
+    bio_bits_buf = None
+    stable_key = None
+    current_stage = "capture"
+    
+    try:
+       
+        bio_bits_buf = capture_biometric(mode)
+        
+        current_stage = "error_correct"
+        _safe_push({"stage": current_stage, "status": "start", "data": {}})
+        stable_key = reproduce(bytes(bio_bits_buf), helper_data)
+        _safe_push({"stage": current_stage, "status": "done", "data": {}})
+        
+        current_stage = "hash"
+        _safe_push({"stage": current_stage, "status": "start", "data": {}})
+        candidate_hex = commit(stable_key)
+        _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": candidate_hex[:8] + "..."}})
+        
+    except Exception as e:
+        
+        _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
+        
+    finally:
+        # SECURE MEMORY WIPE
+        _safe_push({"stage": "wipe", "status": "start", "data": {}})
+        is_zero = True
+        
+        try:
+            if bio_bits_buf is not None:
+                zero_bytes(bio_bits_buf)
+                is_zero = all(b == 0 for b in bio_bits_buf)
+        except Exception:
+            is_zero = False
+            
+        
+        try:
+            if stable_key is not None:
+                del stable_key
+        except Exception:
+            pass
+            
+        _safe_push({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
+        
+    return {"commitment_hex": candidate_hex, "mode": "auth"}
