@@ -13,8 +13,6 @@ def generate_sketch(bio_data: bytes):
         raise ValueError("bio_bits must be exactly 256 bytes")
     
     syndrome = bch.encode(bio_data)
-def generate_sketch(bio_data: bytes):
-    syndrome = bch.encode(bio_data)
     
     mask = secrets.token_bytes(len(bio_data))
     
@@ -28,6 +26,7 @@ def generate_sketch(bio_data: bytes):
 def reproduce_sketch(noisy_bio: bytes, helper_data: bytes):
     if len(noisy_bio) != 256:
         raise ValueError("bio_bits must be exactly 256 bytes")
+        
     ecc_length = bch.ecc_bytes
     syndrome = bytearray(helper_data[:ecc_length])
     mask = helper_data[ecc_length:]
