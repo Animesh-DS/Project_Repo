@@ -1,0 +1,672 @@
+/* =========================================================
+   ZERO KNOWLEDGE BIOMETRICS
+   PREMIUM AURORA UI
+   ========================================================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:"Inter",sans-serif;
+  overflow-x:hidden;
+}
+
+#root{
+  min-height:100vh;
+}
+
+/* =========================================================
+   MAIN PAGE
+   ========================================================= */
+
+.dashboard{
+  width:100%;
+  min-height:100vh;
+  padding:40px;
+  position:relative;
+  overflow:hidden;
+
+  background:
+  linear-gradient(
+    135deg,
+    #f6fbff 0%,
+    #eef7ff 25%,
+    #f7f3ff 70%,
+    #f0fcff 100%
+  );
+
+  color:#08111f;
+}
+
+/* =========================================================
+   ANIMATED AURORA
+   ========================================================= */
+
+/* =========================================================
+   PREMIUM AURORA BACKGROUND
+   ========================================================= */
+
+.background-glow{
+
+  position:fixed;
+  inset:-20%;
+
+  z-index:0;
+  pointer-events:none;
+
+  background:
+
+  radial-gradient(
+    circle at 15% 25%,
+    rgba(0, 213, 255, 0.616),
+    transparent 28%
+  ),
+
+  radial-gradient(
+    circle at 85% 20%,
+    rgba(120, 53, 237, 0.526),
+    transparent 30%
+  ),
+
+  radial-gradient(
+    circle at 50% 80%,
+    rgba(0, 255, 213, 0.452),
+    transparent 35%
+  ),
+
+  radial-gradient(
+    circle at 35% 60%,
+    rgba(99, 101, 241, 0.389),
+    transparent 30%
+  );
+
+  filter:blur(120px);
+
+  animation:
+  auroraFloat 9s ease-in-out infinite alternate,
+  auroraPulse 4s ease-in-out infinite;
+}
+
+/* slow movement */
+
+@keyframes auroraFloat{
+
+  0%{
+    transform:
+    translate(-60px,-30px)
+    scale(1);
+  }
+
+  50%{
+    transform:
+    translate(30px,20px)
+    scale(1.15);
+  }
+
+  100%{
+    transform:
+    translate(70px,40px)
+    scale(1.30);
+  }
+}
+
+/* brightness breathing */
+
+@keyframes auroraPulse{
+
+  0%{
+    opacity:.5;
+  }
+
+  50%{
+    opacity:1;
+  }
+
+  100%{
+    opacity:.6;
+  }
+}
+
+/* =========================================================
+   GLASS PANELS
+   ========================================================= */
+
+.glass{
+
+  background:
+  rgba(255,255,255,.28);
+
+  backdrop-filter:
+  blur(24px);
+
+  border:
+  1px solid rgba(255,255,255,.55);
+
+  border-radius:28px;
+
+  box-shadow:
+
+  0 10px 40px rgba(15,23,42,.04),
+
+  0 0 40px rgba(0,212,255,.04),
+
+  0 0 40px rgba(124,58,237,.04);
+}
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.hero{
+  position:relative;
+  z-index:1;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+
+  margin-top:40px;
+  margin-bottom:60px;
+}
+
+.hero h1{
+
+  font-size:5rem;
+  font-weight:900;
+
+  letter-spacing:-3px;
+
+  color:#08111f;
+
+  margin-bottom:10px;
+}
+
+.hero h1 span{
+
+  background:
+  linear-gradient(
+    90deg,
+    #00c8ff,
+    #7c3aed
+  );
+
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.hero p{
+
+  color:#475569;
+
+  font-size:1.1rem;
+
+  margin-bottom:30px;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.action-buttons{
+
+  display:flex;
+  gap:20px;
+}
+
+.primary-btn,
+.secondary-btn{
+
+  border:none;
+
+  padding:15px 35px;
+
+  border-radius:16px;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:.3s;
+}
+
+.primary-btn{
+
+  background:
+  linear-gradient(
+    135deg,
+    #00d4ff,
+    #00ffd5
+  );
+
+  color:#05151f;
+
+  box-shadow:
+  0 10px 30px rgba(0,212,255,.25);
+}
+
+.secondary-btn{
+
+  background:
+  linear-gradient(
+    135deg,
+    #7c3aed,
+    #9f67ff
+  );
+
+  color:white;
+
+  box-shadow:
+  0 10px 30px rgba(124,58,237,.25);
+}
+
+.primary-btn:hover,
+.secondary-btn:hover{
+
+  transform:
+  translateY(-4px)
+  scale(1.03);
+}
+
+/* =========================================================
+   SECTION TITLE
+   ========================================================= */
+
+.section-title{
+
+  font-size:.9rem;
+
+  font-weight:800;
+
+  letter-spacing:3px;
+
+  color:#475569;
+
+  margin-bottom:25px;
+}
+
+/* =========================================================
+   MEMORY PANEL
+   ========================================================= */
+
+.memory-panel{
+
+  position:relative;
+  z-index:1;
+
+  padding:30px;
+
+  margin-bottom:25px;
+}
+
+/* =========================================================
+   STAGE GRID
+   ========================================================= */
+
+.pipeline-grid{
+
+  display:grid;
+
+  grid-template-columns:
+  repeat(5,1fr);
+
+  gap:18px;
+}
+
+/* =========================================================
+   MEMORY CELL
+   ========================================================= */
+
+.memory-cell{
+
+  min-height:230px;
+
+  padding:18px;
+
+  border-radius:20px;
+
+  background:
+  rgba(244, 241, 241, 0.107);
+
+  border:
+  1px solid rgba(255,255,255,.8);
+
+  transition:.4s;
+
+  overflow:hidden;
+
+  position:relative;
+}
+
+.memory-cell:hover{
+
+  transform:
+  translateY(-5px);
+
+  box-shadow:
+  0 20px 40px rgba(15,23,42,.08);
+}
+
+.memory-title{
+
+  font-weight:800;
+
+  letter-spacing:2px;
+
+  margin-bottom:15px;
+}
+
+/* =========================================================
+   RUNNING
+   ========================================================= */
+
+.memory-cell.running{
+
+  border-color:#f59e0b;
+
+  box-shadow:
+  0 0 35px rgba(245,158,11,.35);
+
+  animation:pulse 1.3s infinite;
+}
+
+@keyframes pulse{
+
+  0%{
+    transform:scale(1);
+  }
+
+  50%{
+    transform:scale(1.02);
+  }
+
+  100%{
+    transform:scale(1);
+  }
+}
+
+/* =========================================================
+   DONE
+   ========================================================= */
+
+.memory-cell.done{
+
+  border-color:#10b981;
+
+  box-shadow:
+  0 0 30px rgba(16,185,129,.25);
+}
+
+/* =========================================================
+   HEX GRID
+   ========================================================= */
+
+.hex-grid{
+
+  display:grid;
+  gap:6px;
+}
+
+.hex-item{
+
+  display:flex;
+  justify-content:space-between;
+
+  font-family:monospace;
+}
+
+.address{
+
+  color:#64748b;
+}
+
+.value{
+
+  color:#0284c7;
+
+  font-weight:700;
+}
+
+/* =========================================================
+   STATUS TEXT
+   ========================================================= */
+
+.waiting{
+
+  color:#64748b;
+
+  margin-top:60px;
+
+  text-align:center;
+}
+
+.processing{
+
+  color:#f59e0b;
+
+  margin-top:60px;
+
+  text-align:center;
+
+  font-weight:700;
+}
+
+/* =========================================================
+   WIPE ALERT
+   ========================================================= */
+
+.wipe-banner{
+
+  position:absolute;
+
+  left:15px;
+  bottom:35px;
+
+  color:#dc2626;
+
+  font-weight:800;
+}
+
+.zeroed-text{
+
+  position:absolute;
+
+  left:15px;
+  bottom:12px;
+
+  color:#dc2626;
+
+  font-family:monospace;
+}
+
+/* =========================================================
+   BOTTOM LAYOUT
+   ========================================================= */
+
+.bottom-layout{
+
+  position:relative;
+  z-index:1;
+
+  display:grid;
+
+  grid-template-columns:
+  1fr 320px;
+
+  gap:25px;
+}
+
+/* =========================================================
+   NODES
+   ========================================================= */
+
+.node-panel,
+.narrative-panel{
+
+  padding:30px;
+}
+
+.node-grid{
+
+  display:flex;
+  gap:18px;
+}
+
+.node-card{
+
+  flex:1;
+
+  padding:20px;
+
+  border-radius:18px;
+
+  text-align:center;
+
+  background:
+  rgba(255,255,255,.45);
+
+  border:
+  1px solid rgba(255,255,255,.8);
+
+  transition:.3s;
+}
+
+.node-card:hover{
+
+  transform:
+  translateY(-4px);
+}
+
+.node-card.success{
+
+  border-color:#10b981;
+}
+
+.node-card.fail{
+
+  border-color:#ef4444;
+}
+
+.vote{
+
+  font-size:2rem;
+  margin-top:10px;
+}
+
+/* =========================================================
+   VERDICT
+   ========================================================= */
+
+.verdict{
+
+  margin-top:25px;
+
+  text-align:center;
+
+  font-size:1.7rem;
+
+  font-weight:800;
+
+  color:#059669;
+}
+
+/* =========================================================
+   NARRATIVE
+   ========================================================= */
+
+.narrative-text{
+
+  color:#475569;
+
+  line-height:1.8;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:1100px){
+
+  .pipeline-grid{
+    grid-template-columns:
+    repeat(3,1fr);
+  }
+
+  .bottom-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:768px){
+
+  .hero h1{
+    font-size:3rem;
+  }
+
+  .pipeline-grid{
+    grid-template-columns:
+    repeat(2,1fr);
+  }
+}
+
+@media(max-width:520px){
+
+  .pipeline-grid{
+    grid-template-columns:1fr;
+  }
+
+  .node-grid{
+    flex-direction:column;
+  }
+
+  .dashboard{
+    padding:20px;
+  }
+}
+.narrative-container{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:18px;
+}
+
+.narrative-badge{
+
+  width:max-content;
+
+  padding:8px 14px;
+
+  border-radius:999px;
+
+  background:
+  rgba(0,212,255,.12);
+
+  color:#0284c7;
+
+  font-size:.8rem;
+
+  font-weight:700;
+
+  letter-spacing:1px;
+}
+
+.verdict.success{
+  color:#10b981;
+}
+
+.verdict.fail{
+  color:#ef4444;
+}
+
+.node-card.fail{
+
+  border-color:#ef4444;
+
+  box-shadow:
+  0 0 25px
+  rgba(239,68,68,.15);
+}
