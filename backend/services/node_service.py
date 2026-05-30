@@ -7,10 +7,12 @@ class MockNode:
         self._store: dict[str, str] = {}
 
     def store(self, commitment_hex: str, helper_data: bytes) -> None:
+        
         helper_data_hash = hashlib.sha256(helper_data).hexdigest()
         self._store[commitment_hex] = helper_data_hash
 
     def query(self, candidate_hex: str) -> bool:
+       
         return candidate_hex in self._store
         
     def count_records(self) -> int:
