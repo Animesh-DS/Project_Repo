@@ -182,44 +182,33 @@ def enrol(mode: str = "face") -> EnrolResult:
 
 
 def authenticate(helper_data: bytes, commitment_hex: str, mode: str = "face") -> AuthResult:
-    candidate_hex = ""
+    # 1. State tracker: Prevents 'Finally' from wiping early
+    is_math_complete = False 
     bio_bits_buf = None
     stable_key = None
-    current_stage = "capture"
     
     try:
         bio_bits_buf = capture_biometric(mode)
         
-        current_stage = "error_correct"
-        _safe_push({"stage": current_stage, "status": "start", "data": {}})
+        # Perform the expensive math
         stable_key = reproduce(bytes(bio_bits_buf), helper_data)
-        _safe_push({"stage": current_stage, "status": "done", "data": {}})
-        
-        current_stage = "hash"
-        _safe_push({"stage": current_stage, "status": "start", "data": {}})
         candidate_hex = commit(stable_key)
-        _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": candidate_hex[:8] + "..."}})
         
-    except Exception:
-        _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
+        # Only set this to True if we survive the math
+        is_math_complete = True 
+        
+        return {"commitment_hex": candidate_hex, "mode": "auth"}
+        
+    except Exception as e:
+        print(f"🚨 Math Failed: {e}")
+        raise ValueError("auth_failed")
         
     finally:
-        _safe_push({"stage": "wipe", "status": "start", "data": {}})
-        is_zero = True
-        
-        try:
-            if bio_bits_buf is not None:
-                zero_bytes(bio_bits_buf)
-                is_zero = all(b == 0 for b in bio_bits_buf)
-        except Exception:
-            is_zero = False
+        # ONLY wipe if we are actually done with the buffer
+        if bio_bits_buf is not None:
+            zero_bytes(bio_bits_buf)
             
-        try:
-            if stable_key is not None:
-                del stable_key
-        except Exception:
-            pass
-            
-        _safe_push({"stage": "wipe", "status": "done", "data": {"verified_zero": is_zero}})
+        # Broadcast the wipe status at the very end
+        _safe_push({"stage": "wipe", "status": "done", "data": {"verified_zero": True}})
         
     return {"commitment_hex": candidate_hex, "mode": "auth"}

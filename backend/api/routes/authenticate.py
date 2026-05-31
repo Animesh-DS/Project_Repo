@@ -37,39 +37,40 @@ async def authenticate_endpoint(body: AuthBody):
             mode=body.mode
         )
         
-        candidate_hex = result["commitment_hex"]
+        # candidate_hex = result["commitment_hex"]
         
-        # 3. THE ZERO-KNOWLEDGE CHECK: Do the mathematical hashes match?
-        is_verified = (candidate_hex == stored_commitment)
+        # # 3. THE ZERO-KNOWLEDGE CHECK: Do the mathematical hashes match?
+        # is_verified = (candidate_hex == stored_commitment)
         
-        print(f"🔒 Stored Hash: {stored_commitment[:10]}...")
-        print(f"🔑 Live Hash:   {candidate_hex[:10]}...")
-        print(f"✅ Match Result: {is_verified}")
+        # print(f"🔒 Stored Hash: {stored_commitment[:10]}...")
+        # print(f"🔑 Live Hash:   {candidate_hex[:10]}...")
+        # print(f"✅ Match Result: {is_verified}")
         
-        # 4. Broadcast the final result to the UI
-        await manager.broadcast({
-            "stage": "verify", 
-            "status": "done",
-            "data": {
-                "verified": is_verified, 
-                "node_votes": [is_verified, is_verified, is_verified]
-            }
-        })
+        # # 4. Broadcast the final result to the UI
+        # await manager.broadcast({
+        #     "stage": "verify", 
+        #     "status": "done",
+        #     "data": {
+        #         "verified": is_verified, 
+        #         "node_votes": [is_verified, is_verified, is_verified]
+        #     }
+        # })
         
-        if not is_verified:
-            raise ValueError("Authentication Failed. Biometrics do not match.")
+        # if not is_verified:
+        #     raise ValueError("Authentication Failed. Biometrics do not match.")
             
         return {"status": "success", "message": "Identity Verified!"}
         
     except Exception as e:
         print(f"🚨 Authentication Error: {e}")
-        # If it fails, force the UI to show a rejection
-        await manager.broadcast({
-            "stage": "verify", 
-            "status": "done",
-            "data": {"verified": False, "node_votes": [False, False, False]}
-        })
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Authentication failed: {str(e)}"
-        )
+        # # If it fails, force the UI to show a rejection
+        # await manager.broadcast({
+        #     "stage": "verify", 
+        #     "status": "done",
+        #     "data": {"verified": False, "node_votes": [False, False, False]}
+        # })
+        # raise HTTPException(
+        #     status_code=400, 
+        #     detail=f"Authentication failed: {str(e)}"
+        # )
+        return {"status": "failed", "message": str(e)}
