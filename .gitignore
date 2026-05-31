@@ -2,6 +2,9 @@
 # Environments & Secrets
 # =========================
 venv/
+__pycache__/
+*.pyc
+venv/
 env/
 .env/
 .venv/
