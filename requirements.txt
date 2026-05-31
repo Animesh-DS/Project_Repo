@@ -3,3 +3,8 @@ uvicorn
 websockets
 pydantic
 EOF 
+opencv-python
+cmake
+dlib
+bchlib
+websockets
