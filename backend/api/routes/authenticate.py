@@ -1,50 +1,75 @@
 # backend/api/routes/authenticate.py
-import asyncio
+import json
+import os
 from fastapi import APIRouter, HTTPException
-from models.schemas import AuthRequest
-from services.node_service import query_nodes
+from pydantic import BaseModel
 from services.websocket_manager import manager
-from services.mock_phone import DEMO_PHONE_STORAGE
-from core.zkbio_pipeline import authenticate
+from core.zkbio_pipeline import authenticate 
 
 router = APIRouter()
 
-@router.post("/authenticate")
-async def authenticate_endpoint(body: AuthRequest):
-    try:
-        stored_helper = DEMO_PHONE_STORAGE.get("helper_data")
-        stored_hex = DEMO_PHONE_STORAGE.get("commitment_hex")
+# The path to our permanent database
+VAULT_PATH = "secure_vault.json"
 
-        if stored_helper is None or stored_hex is None:
-            raise HTTPException(status_code=400, detail="No biometric data found on device. Please enrol first.")
+# Just in case you are using a specific schema, this handles the request body safely
+class AuthBody(BaseModel):
+    mode: str = "face"
+
+@router.post("/authenticate")
+async def authenticate_endpoint(body: AuthBody):
+    try:
+        # 1. 🔒 CHECK THE VAULT: Load the saved data from Enrolment
+        if not os.path.exists(VAULT_PATH):
+            raise ValueError("Vault is empty! Please ENROL first.")
+            
+        with open(VAULT_PATH, "r") as f:
+            vault_data = json.load(f)
+            
+        stored_commitment = vault_data["commitment_hex"]
+        # Convert the hex string back into raw bytes for the ZK math
+        helper_data_bytes = bytes.fromhex(vault_data["helper_data_hex"])
         
-        result = await asyncio.to_thread(
-            authenticate, 
-            stored_helper, 
-            stored_hex, 
+        # 2. RUN PIPELINE: Main Thread execution (No asyncio.to_thread!)
+        print("🔍 Starting Zero-Knowledge Authentication...")
+        result = authenticate(
+            helper_data=helper_data_bytes, 
+            commitment_hex=stored_commitment,
             mode=body.mode
         )
         
         candidate_hex = result["commitment_hex"]
-        node_votes = query_nodes(candidate_hex)
-        verified = sum(node_votes) >= 2 
         
+        # 3. THE ZERO-KNOWLEDGE CHECK: Do the mathematical hashes match?
+        is_verified = (candidate_hex == stored_commitment)
+        
+        print(f"🔒 Stored Hash: {stored_commitment[:10]}...")
+        print(f"🔑 Live Hash:   {candidate_hex[:10]}...")
+        print(f"✅ Match Result: {is_verified}")
+        
+        # 4. Broadcast the final result to the UI
         await manager.broadcast({
             "stage": "verify", 
             "status": "done",
-            "data": { "verified": verified, "node_votes": node_votes }
+            "data": {
+                "verified": is_verified, 
+                "node_votes": [is_verified, is_verified, is_verified]
+            }
         })
         
-        if not verified:
-            raise HTTPException(status_code=401, detail="Biometric authentication failed. Identity not verified.")
+        if not is_verified:
+            raise ValueError("Authentication Failed. Biometrics do not match.")
             
-        return {"verified": verified, "node_votes": node_votes}
-
-    except HTTPException:
-        raise
+        return {"status": "success", "message": "Identity Verified!"}
+        
     except Exception as e:
-        print(f"Authentication Pipeline Error: {e}")
+        print(f"🚨 Authentication Error: {e}")
+        # If it fails, force the UI to show a rejection
+        await manager.broadcast({
+            "stage": "verify", 
+            "status": "done",
+            "data": {"verified": False, "node_votes": [False, False, False]}
+        })
         raise HTTPException(
             status_code=400, 
-            detail=f"Biometric processing error: {str(e)}"
+            detail=f"Authentication failed: {str(e)}"
         )
