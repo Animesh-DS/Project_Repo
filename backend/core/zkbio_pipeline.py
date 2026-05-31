@@ -45,16 +45,44 @@ def capture_biometric(mode: str = "face", filepath: str = "") -> bytearray:
     if mode == "face":
         # Block concurrent threads from accessing the camera simultaneously
         with camera_lock:
-            cap = cv2.VideoCapture(0)
-            try:
-                for _ in range(5):
-                    cap.read()
-                ret, frame = cap.read()
-            finally:
+            # Force Index 1 based on the working hardware configuration
+            cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+            
+            if not cap.isOpened():
                 cap.release()
+                cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                cap.release()
+                cap = cv2.VideoCapture(1)
+
+            frame = None
+            ret = False
+            
+            try:
+                import time
+                start_time = time.time()
+                
+                # Show the live feed for exactly 2.0 seconds
+                while time.time() - start_time < 2.0:
+                    success, live_frame = cap.read()
+                    if success:
+                        ret = True
+                        frame = live_frame
+                        # Open a native GUI window displaying the live video feed
+                        cv2.imshow("Live Biometric Capture", frame)
+                    
+                    # A small waitKey delay is strictly required to let the OpenCV window render frames
+                    cv2.waitKey(1)
+                    
+            finally:
+                # Clean up the camera hardware and force-close the GUI window immediately
+                cap.release()
+                cv2.destroyAllWindows()
         
-        if not ret:
+        if not ret or frame is None:
             raise ValueError("capture_failed")
+            
+        # The debug_camera_view.jpg line has been completely removed
             
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
@@ -126,8 +154,10 @@ def enrol(mode: str = "face") -> EnrolResult:
         commitment_hex = commit(stable_key)
         _safe_push({"stage": current_stage, "status": "done", "data": {"commitment_hex": commitment_hex[:8] + "..."}})
         
-    except Exception:
-        _safe_push({"stage": current_stage, "status": "error", "data": {"error": f"{current_stage}_failed"}})
+    except Exception as e:
+        # 🔥 THE UNMASKING: Print the exact Python crash reason to the terminal!
+        print(f"🚨 PIPELINE CRASHED: {repr(e)}") 
+        _safe_push({"stage": current_stage, "status": "error", "data": {"error": str(e)}})
         
     finally:
         _safe_push({"stage": "wipe", "status": "start", "data": {}})

@@ -3,7 +3,7 @@ import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-
+import time
 from services.websocket_manager import manager 
 from api.routes import enrol, authenticate
 from core.zkbio_pipeline import event_queue
@@ -16,6 +16,10 @@ def drain_pipeline_events(loop: asyncio.AbstractEventLoop):
     """
     while True:
         event = event_queue.get() 
+
+        time.sleep(1.5)
+        print(f"📢 BROADCASTING TO FRONTEND: {event}")
+            
         try:
             future = asyncio.run_coroutine_threadsafe(manager.broadcast(event), loop)
             future.result() 
